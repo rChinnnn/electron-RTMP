@@ -1,12 +1,12 @@
 {
-  "name": "electron-WebRTC-RTMP",
+  "name": "electron-rtmp",
   "version": "1.0.0",
   "description": "A minimal Electron application",
   "main": "main.js",
   "scripts": {
     "start": "electron ."
   },
-  "repository": "https://github.com/rChinnnn/electron-WebRTC-RTMP",
+  "repository": "https://github.com/rChinnnn/electron-RTMP",
   "keywords": [
     "Electron",
     "quick",

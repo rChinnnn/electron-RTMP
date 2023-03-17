@@ -1,39 +1,27 @@
-# electron-WebRTC-RTMP
-
-**Clone and run for a quick way to see Electron in action.**
-
-This is a minimal Electron application based on the [Quick Start Guide](https://electronjs.org/docs/latest/tutorial/quick-start) within the Electron documentation.
-
-A basic Electron application needs just these files:
-
-- `package.json` - Points to the app's main file and lists its details and dependencies.
-- `main.js` - Starts the app and creates a browser window to render HTML. This is the app's **main process**.
-- `index.html` - A web page to render. This is the app's **renderer process**.
-- `preload.js` - A content script that runs before the renderer process loads.
-
-You can learn more about each of these components in depth within the [Tutorial](https://electronjs.org/docs/latest/tutorial/tutorial-prerequisites).
-
+# electron-RTMP
 ## To Use
 
-To clone and run this repository you'll need [Git](https://git-scm.com) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
+To clone and run this repository you'll need [Git](https://git-scm.com) and [ffmpeg](https://ffmpeg.org/) and [Node.js](https://nodejs.org/en/download/) (which comes with [npm](http://npmjs.com)) installed on your computer. From your command line:
 
 ```bash
 # Clone this repository
-git clone https://github.com/rChinnnn/electron-WebRTC-RTMP
+git clone https://github.com/rChinnnn/electron-RTMP
 # Go into the repository
-cd electron-WebRTC-RTMP
+cd electron-RTMP
 # Install dependencies
 npm install
 # Run the app
 npm start
 ```
 
-Note: If you're using Linux Bash for Windows, [see this guide](https://www.howtogeek.com/261575/how-to-run-graphical-linux-desktop-applications-from-windows-10s-bash-shell/) or use `node` from the command prompt.
+### 將要測試直播的 mp4 檔案放入根目錄，並命名為 source.mp4，接著透過 ffmpeg 假裝是直播主透過 RTMP 協定進行推流
 
-## Resources for Learning Electron
+```bash
+# -stream_loop -1 為重複推送指令，使直播不間斷
+ffmpeg -re -stream_loop -1 -i source.mp4 -c copy -f flv rtmp://localhost/live/mark
+```
 
-- [electronjs.org/docs](https://electronjs.org/docs) - all of Electron's documentation
-- [Electron Fiddle](https://electronjs.org/fiddle) - Electron Fiddle, an app to test small Electron experiments
+### 接下來我們只要指定某個直播主就好，像上面這個直播主是用 mark 串流，在 Electron 頁面中輸入 mark 並且點選 Load，即可觀看直播
 
 ## License
 

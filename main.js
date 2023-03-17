@@ -1,14 +1,16 @@
-// Modules to control application life and create native browser window
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
+const { app, BrowserWindow } = require('electron')
+const NodeMediaServer = require('node-media-server')
+const { Server } = require('socket.io')
+// const adapter = require('webrtc-adapter')
 
-function createWindow () {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+let mainWindow
+
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js')
+      nodeIntegration: true
     }
   })
 
@@ -16,28 +18,69 @@ function createWindow () {
   mainWindow.loadFile('index.html')
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
+
+  mainWindow.on('closed', function () {
+    mainWindow = null
+  })
 }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
+app.on('ready', function () {
   createWindow()
 
-  app.on('activate', function () {
-    // On macOS it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+  const nms = new NodeMediaServer({
+    rtmp: {
+      port: 1935,
+      chunk_size: 60000,
+      gop_cache: true,
+      ping: 60,
+      ping_timeout: 30
+    },
+    http: {
+      port: 8000,
+      allow_origin: '*'
+    }
   })
-})
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
+  nms.run()
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+  const socket = new Server(8080)
+  socket.on('start-stream', function () {
+    console.log('Start streaming')
+
+    // Start WebRTC stream
+    const peerConnection = new RTCPeerConnection({
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    })
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(function (stream) {
+        const videoTrack = stream.getVideoTracks()[0]
+        const audioTrack = stream.getAudioTracks()[0]
+
+        peerConnection.addTrack(videoTrack, stream)
+        peerConnection.addTrack(audioTrack, stream)
+
+        peerConnection.createOffer()
+          .then(function (offer) {
+            return peerConnection.setLocalDescription(offer)
+          })
+          .then(function () {
+            socket.emit('offer', peerConnection.localDescription)
+          })
+      })
+      .catch(function (err) {
+        console.error('Failed to get user media', err)
+      })
+  })
+
+  socket.on('answer', function (answer) {
+    console.log('Received answer')
+    peerConnection.setRemoteDescription(answer)
+  })
+
+  socket.on('candidate', function (candidate) {
+    console.log('Received candidate')
+    peerConnection.addIceCandidate(candidate)
+  })
+
+})
